@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 
 # Load trained model
-model = pickle.load(open("../model/placement_model.pkl", "rb"))
+model = pickle.load(open("../placement_model.pkl", "rb"))
 
 st.title("Student Placement Prediction Dashboard")
 
