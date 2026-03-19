@@ -1,42 +1,68 @@
 import streamlit as st
 import pickle
 import os
-import numpy as np
+import pandas as pd
 
-# Load model safely
+# Load model + columns
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 model_path = os.path.join(BASE_DIR, "placement_model.pkl")
 
-model = pickle.load(open(model_path, "rb"))
+model, columns = pickle.load(open(model_path, "rb"))
 
 st.title("🎓 Student Placement Predictor")
 
 st.write("Enter student details:")
 
 # Inputs
-ssc_p = st.slider("SSC Percentage", 0, 100, 50)
-hsc_p = st.slider("HSC Percentage", 0, 100, 50)
-degree_p = st.slider("Degree Percentage", 0, 100, 50)
-etest_p = st.slider("Employability Test %", 0, 100, 50)
-mba_p = st.slider("MBA Percentage", 0, 100, 50)
+gender = st.selectbox("Gender", ["M", "F"])
+ssc_p = st.slider("SSC %", 0, 100, 50)
+ssc_b = st.selectbox("SSC Board", ["Central", "Others"])
+
+hsc_p = st.slider("HSC %", 0, 100, 50)
+hsc_b = st.selectbox("HSC Board", ["Central", "Others"])
+hsc_s = st.selectbox("HSC Stream", ["Commerce", "Science", "Arts"])
+
+degree_p = st.slider("Degree %", 0, 100, 50)
+degree_t = st.selectbox("Degree Type", ["Sci&Tech", "Comm&Mgmt", "Others"])
 
 workex = st.selectbox("Work Experience", ["Yes", "No"])
-gender = st.selectbox("Gender", ["Male", "Female"])
 
-# Convert inputs
-workex = 1 if workex == "Yes" else 0
-gender = 1 if gender == "Male" else 0
+etest_p = st.slider("Employability Test %", 0, 100, 50)
 
-# NOTE: simplified feature input (for working demo)
-features = np.array([[ssc_p, hsc_p, degree_p, etest_p, mba_p]])
+specialisation = st.selectbox("Specialisation", ["Mkt&HR", "Mkt&Fin"])
 
-# Prediction
+mba_p = st.slider("MBA %", 0, 100, 50)
+
+# Create input dictionary
+input_dict = {
+    "gender": gender,
+    "ssc_p": ssc_p,
+    "ssc_b": ssc_b,
+    "hsc_p": hsc_p,
+    "hsc_b": hsc_b,
+    "hsc_s": hsc_s,
+    "degree_p": degree_p,
+    "degree_t": degree_t,
+    "workex": workex,
+    "etest_p": etest_p,
+    "specialisation": specialisation,
+    "mba_p": mba_p
+}
+
+# Convert to DataFrame
+input_df = pd.DataFrame([input_dict])
+
+# Apply same encoding
+input_df = pd.get_dummies(input_df)
+
+# Match training columns
+input_df = input_df.reindex(columns=columns, fill_value=0)
+
+# Predict
 if st.button("Predict"):
-    try:
-        prediction = model.predict(features)
-        if prediction[0] == 1:
-            st.success("🎉 Student is likely to be PLACED")
-        else:
-            st.error("❌ Student is NOT likely to be placed")
-    except:
-        st.error("⚠️ Model input mismatch — but app is running!")
+    prediction = model.predict(input_df)
+
+    if prediction[0] == 1:
+        st.success("🎉 Student is likely to be PLACED")
+    else:
+        st.error("❌ Student is NOT likely to be placed")
