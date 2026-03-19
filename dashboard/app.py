@@ -1,38 +1,29 @@
-import streamlit as st
 import pandas as pd
 import pickle
-import numpy as np
 
-# Load trained model
-model = pickle.load(open("../placement_model.pkl", "rb"))
+# Load dataset from data folder
+data = pd.read_csv("data/Placement_Data_Full_Class.csv")
 
-st.title("Student Placement Prediction Dashboard")
+# Drop unwanted columns
+data = data.drop(columns=["sl_no", "salary"])
 
-st.write("Enter student academic details to predict placement status.")
+# Convert categorical to numerical
+data = pd.get_dummies(data, drop_first=True)
 
-# User Inputs
-ssc_p = st.number_input("10th Percentage (SSC)")
-hsc_p = st.number_input("12th Percentage (HSC)")
-degree_p = st.number_input("Degree Percentage")
-etest_p = st.number_input("Employability Test Score")
-mba_p = st.number_input("MBA Percentage")
+# Split features and target
+X = data.drop("status_Placed", axis=1)
+y = data["status_Placed"]
 
-# Simple inputs for categorical values
-gender = st.selectbox("Gender", ["Male", "Female"])
-workex = st.selectbox("Work Experience", ["Yes", "No"])
+# Train model
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
 
-# Convert inputs to numeric
-gender = 1 if gender == "Male" else 0
-workex = 1 if workex == "Yes" else 0
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-if st.button("Predict Placement"):
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train, y_train)
 
-    features = np.array([[gender, ssc_p, 0, hsc_p, 0, 0,
-                          degree_p, 0, workex, etest_p, 0, mba_p]])
+# Save model
+pickle.dump(model, open("placement_model.pkl", "wb"))
 
-    prediction = model.predict(features)
-
-    if prediction[0] == 1:
-        st.success("The student is likely to be PLACED")
-    else:
-        st.error("The student is likely NOT to be placed")
+print("✅ Model trained and saved!")
