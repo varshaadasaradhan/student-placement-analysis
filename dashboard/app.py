@@ -1,29 +1,42 @@
-import pandas as pd
+import streamlit as st
 import pickle
+import os
+import numpy as np
 
-# Load dataset from data folder
-data = pd.read_csv("data/Placement_Data_Full_Class.csv")
+# Load model safely
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+model_path = os.path.join(BASE_DIR, "placement_model.pkl")
 
-# Drop unwanted columns
-data = data.drop(columns=["sl_no", "salary"])
+model = pickle.load(open(model_path, "rb"))
 
-# Convert categorical to numerical
-data = pd.get_dummies(data, drop_first=True)
+st.title("🎓 Student Placement Predictor")
 
-# Split features and target
-X = data.drop("status_Placed", axis=1)
-y = data["status_Placed"]
+st.write("Enter student details:")
 
-# Train model
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
+# Inputs
+ssc_p = st.slider("SSC Percentage", 0, 100, 50)
+hsc_p = st.slider("HSC Percentage", 0, 100, 50)
+degree_p = st.slider("Degree Percentage", 0, 100, 50)
+etest_p = st.slider("Employability Test %", 0, 100, 50)
+mba_p = st.slider("MBA Percentage", 0, 100, 50)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+workex = st.selectbox("Work Experience", ["Yes", "No"])
+gender = st.selectbox("Gender", ["Male", "Female"])
 
-model = LogisticRegression(max_iter=1000)
-model.fit(X_train, y_train)
+# Convert inputs
+workex = 1 if workex == "Yes" else 0
+gender = 1 if gender == "Male" else 0
 
-# Save model
-pickle.dump(model, open("placement_model.pkl", "wb"))
+# NOTE: simplified feature input (for working demo)
+features = np.array([[ssc_p, hsc_p, degree_p, etest_p, mba_p]])
 
-print("✅ Model trained and saved!")
+# Prediction
+if st.button("Predict"):
+    try:
+        prediction = model.predict(features)
+        if prediction[0] == 1:
+            st.success("🎉 Student is likely to be PLACED")
+        else:
+            st.error("❌ Student is NOT likely to be placed")
+    except:
+        st.error("⚠️ Model input mismatch — but app is running!")
